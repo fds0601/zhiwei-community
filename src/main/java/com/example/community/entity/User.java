@@ -13,6 +13,8 @@ public class User {
     private String bio;
     private String email;
     private String avatar;
+    private String banner;
+    private String phone;
     private String role;
     private Integer status;
     @TableLogic
@@ -34,6 +36,10 @@ public class User {
     public void setEmail(String email) { this.email = email; }
     public String getAvatar() { return avatar; }
     public void setAvatar(String avatar) { this.avatar = avatar; }
+    public String getBanner() { return banner; }
+    public void setBanner(String banner) { this.banner = banner; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     public Integer getStatus() { return status; }

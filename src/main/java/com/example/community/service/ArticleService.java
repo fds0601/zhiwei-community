@@ -92,14 +92,19 @@ public class ArticleService {
                 log.warn("Redis缓存写入失败", e);
             }
         }
-        articleMapper.update(null,
-                Wrappers.<Article>lambdaUpdate()
-                        .eq(Article::getId, id)
-                        .setSql("view_count = view_count + 1"));
-        article.setViewCount(article.getViewCount() + 1);
+        // 浏览量去重：同一用户24小时内只算一次
+        Long currentUserId = UserContext.getUserId();
+        String viewKey = "view:" + id + ":" + (currentUserId != null ? currentUserId : "anon");
+        Boolean viewed = redisTemplate.opsForValue().setIfAbsent(viewKey, "1", Duration.ofHours(24));
+        if (Boolean.TRUE.equals(viewed)) {
+            articleMapper.update(null,
+                    Wrappers.<Article>lambdaUpdate()
+                            .eq(Article::getId, id)
+                            .setSql("view_count = view_count + 1"));
+            article.setViewCount(article.getViewCount() + 1);
+        }
 
         boolean liked = false, favorited = false;
-        Long currentUserId = UserContext.getUserId();
         if (currentUserId != null) {
             liked = articleLikeMapper.selectCount(
                     new LambdaQueryWrapper<ArticleLike>()

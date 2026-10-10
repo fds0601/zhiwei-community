@@ -4,8 +4,15 @@
       <h2>消息通知</h2>
       <el-button link @click="readAll">全部已读</el-button>
     </div>
-    <el-empty v-if="list.length===0" description="暂无通知" />
-    <div v-for="n in list" :key="n.id" class="item" :class="{unread: n.isRead===0}" @click="open(n)">
+    <el-tabs v-model="type" @tab-change="load">
+      <el-tab-pane label="全部" name="ALL" />
+      <el-tab-pane label="赞和收藏" name="LIKE" />
+      <el-tab-pane label="评论和回复" name="COMMENT" />
+      <el-tab-pane label="关注" name="FOLLOW" />
+    </el-tabs>
+    <el-empty v-if="filtered.length===0" description="暂无通知" />
+    <div v-for="n in filtered" :key="n.id" class="item" :class="{unread: n.isRead===0}" @click="open(n)">
+      <el-tag size="small" style="flex-shrink:0">{{ typeLabel(n.type) }}</el-tag>
       <b>{{ n.fromNickname }}</b>
       <span class="content">{{ n.content }}</span>
       <span class="time">{{ n.createTime?.substring(0,16).replace('T',' ') }}</span>
@@ -14,16 +21,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 
 const router = useRouter()
 const list = ref([])
+const type = ref('ALL')
 const load = async () => {
   const res = await api.get('/notification')
-  list.value = res.data
+  list.value = res.data || []
 }
+const filtered = computed(() => {
+  if (type.value === 'ALL') return list.value
+  if (type.value === 'LIKE') return list.value.filter(n => n.type === 'LIKE')
+  if (type.value === 'COMMENT') return list.value.filter(n => n.type === 'COMMENT')
+  if (type.value === 'FOLLOW') return list.value.filter(n => n.type === 'FOLLOW')
+  return list.value
+})
+const typeLabel = (t) => ({ LIKE: '赞', COMMENT: '评论', FOLLOW: '关注' }[t] || t)
 const readAll = async () => {
   await api.post('/notification/read-all')
   load()
@@ -36,7 +52,7 @@ onMounted(load)
 
 <style scoped>
 .container { max-width: 800px; margin: 20px auto; padding: 20px; background: #fff; border-radius: 8px; }
-.item { padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 10px; cursor: pointer; }
+.item { padding: 12px; border-bottom: 1px solid #eee; display: flex; gap: 10px; cursor: pointer; align-items: center; }
 .item.unread { background: #f0f7ff; }
 .content { flex: 1; }
 .time { color: #aaa; font-size: 12px; }

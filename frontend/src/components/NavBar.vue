@@ -9,13 +9,29 @@
         <router-link to="/" class="nav-link">首页</router-link>
         <router-link to="/hot" class="nav-link">热门</router-link>
         <router-link to="/tools" class="nav-link">AI工具</router-link>
+        <router-link to="/tags" class="nav-link">标签</router-link>
       </div>
       <div class="nav-right">
-        <el-input v-model="keyword" placeholder="搜索文章" style="width:220px" @keyup.enter="doSearch">
-          <template #prefix>
-            <el-icon @click="doSearch" style="cursor:pointer"><Search /></el-icon>
-          </template>
-        </el-input>
+        <div class="search-box" @focusin="onSearchFocus" @focusout="onSearchBlur">
+          <el-input v-model="keyword" placeholder="搜索文章" style="width:220px"
+            @keyup.enter="doSearch" @input="onSearchInput">
+            <template #prefix>
+              <el-icon style="cursor:pointer" @click="doSearch"><Search /></el-icon>
+            </template>
+          </el-input>
+          <div v-if="searchPop" class="search-dropdown">
+            <div v-if="suggestions.length" class="section">
+              <div class="section-title">搜索联想</div>
+              <div v-for="s in suggestions" :key="s" class="suggest-item" @mousedown.prevent="pickSuggest(s)">{{ s }}</div>
+            </div>
+            <div class="section">
+              <div class="section-title">热门搜索</div>
+              <div class="hot-words">
+                <el-tag v-for="w in hotWords" :key="w" size="small" class="hot-tag" @mousedown.prevent="pickSuggest(w)">{{ w }}</el-tag>
+              </div>
+            </div>
+          </div>
+        </div>
         <router-link to="/publish" v-if="token" class="publish-btn">写文章</router-link>
         <template v-if="token">
           <el-badge :value="unread" :hidden="unread===0" class="bell">
@@ -23,12 +39,16 @@
           </el-badge>
           <el-dropdown trigger="click" @command="handleCommand">
             <span class="username">
+              <el-avatar :size="28" :src="avatarUrl || undefined" style="vertical-align:middle">{{ nickname[0] }}</el-avatar>
               {{ nickname }} <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人主页</el-dropdown-item>
+                <el-dropdown-item command="drafts">我的草稿</el-dropdown-item>
                 <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
+                <el-dropdown-item command="notifications">消息通知</el-dropdown-item>
+                <el-dropdown-item v-if="role==='ADMIN'" command="admin">管理后台</el-dropdown-item>
                 <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -51,32 +71,55 @@ const keyword = ref('')
 const token = ref(localStorage.getItem('token'))
 const nickname = ref(localStorage.getItem('nickname') || '用户')
 const userId = ref(localStorage.getItem('userId'))
+const role = ref(localStorage.getItem('role') || 'USER')
+const avatarUrl = ref(localStorage.getItem('avatar') || '')
 const unread = ref(0)
+const suggestions = ref([])
+const hotWords = ref([])
+const searchPop = ref(false)
 
 const doSearch = () => {
-  if (keyword.value) router.push('/search?keyword=' + encodeURIComponent(keyword.value))
+  if (keyword.value) {
+    searchPop.value = false
+    router.push('/search?keyword=' + encodeURIComponent(keyword.value))
+  }
 }
-
-const fetchUnread = async () => {
-  if (!token.value) return
+const pickSuggest = (w) => {
+  keyword.value = w
+  searchPop.value = false
+  router.push('/search?keyword=' + encodeURIComponent(w))
+}
+const onSearchInput = async () => {
+  if (!keyword.value || keyword.value.length < 1) { suggestions.value = []; return }
   try {
-    const res = await api.get('/notification/unread')
-    unread.value = res.data
+    const res = await api.get('/search/suggest', { params: { keyword: keyword.value } })
+    suggestions.value = res.data || []
   } catch (e) {}
 }
-
+const onSearchFocus = async () => {
+  searchPop.value = true
+  if (!hotWords.value.length) {
+    try { const res = await api.get('/search/hot'); hotWords.value = res.data || [] } catch (e) {}
+  }
+}
+const onSearchBlur = () => {
+  setTimeout(() => { searchPop.value = false }, 200)
+}
+const fetchUnread = async () => {
+  if (!token.value) return
+  try { const res = await api.get('/notification/unread'); unread.value = res.data } catch (e) {}
+}
 onMounted(fetchUnread)
-
 const logout = () => {
-  localStorage.removeItem('token')
-  localStorage.removeItem('nickname')
-  localStorage.removeItem('userId')
+  localStorage.clear()
   window.location.href = '/'
 }
-
 const handleCommand = (cmd) => {
   if (cmd === 'profile') router.push('/user/' + userId.value)
   else if (cmd === 'favorites') router.push('/favorites')
+  else if (cmd === 'drafts') router.push('/drafts')
+  else if (cmd === 'notifications') router.push('/notifications')
+  else if (cmd === 'admin') router.push('/admin')
   else if (cmd === 'logout') logout()
 }
 </script>
@@ -91,6 +134,15 @@ const handleCommand = (cmd) => {
 .nav-right { margin-left: auto; display: flex; align-items: center; gap: 15px; }
 .publish-btn { background: #1e80ff; color: #fff; padding: 6px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; }
 .login-btn { color: #1e80ff; text-decoration: none; font-size: 14px; }
-.username { cursor: pointer; font-size: 14px; display: flex; align-items: center; }
+.username { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
 .bell { font-size: 18px; }
+.search-panel { padding: 8px 0; }
+.search-box { position: relative; }
+.search-dropdown { position: absolute; top: 40px; left: 0; width: 280px; background: #fff; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 200; padding: 8px 0; }
+.section { padding: 4px 12px; }
+.section-title { font-size: 12px; color: #999; margin-bottom: 6px; }
+.suggest-item { padding: 6px 0; cursor: pointer; font-size: 14px; color: #333; }
+.suggest-item:hover { color: #1e80ff; }
+.hot-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.hot-tag { cursor: pointer; }
 </style>

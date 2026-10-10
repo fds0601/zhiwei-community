@@ -67,7 +67,8 @@ public class SecurityConfig {
                                 "/favicon.ico", "/META-INF/**").permitAll()
                         .requestMatchers("/article/list", "/article/{id}",
                                 "/article/search", "/article/hot", "/article/user/**",
-                                "/tool/list", "/uploads/**").permitAll()
+                                "/tool/list", "/uploads/**",
+                                "/tags/hot", "/search/hot", "/search/suggest", "/search/all").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
