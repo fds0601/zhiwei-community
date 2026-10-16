@@ -24,12 +24,15 @@ public class V4Controller {
     private final UserMapper userMapper;
     private final ArticleMapper articleMapper;
     private final FollowMapper followMapper;
+    private final CommentMapper commentMapper;
+    private final NotificationMapper notificationMapper;
     private final StringRedisTemplate redis;
     private final PasswordEncoder passwordEncoder;
 
     public V4Controller(DraftMapper draftMapper, ArticleReactionMapper reactionMapper,
                         UserBlockMapper blockMapper, ReportMapper reportMapper, UserMapper userMapper,
                         ArticleMapper articleMapper, FollowMapper followMapper,
+                        CommentMapper commentMapper, NotificationMapper notificationMapper,
                         StringRedisTemplate redis, PasswordEncoder passwordEncoder) {
         this.draftMapper = draftMapper;
         this.reactionMapper = reactionMapper;
@@ -38,6 +41,8 @@ public class V4Controller {
         this.userMapper = userMapper;
         this.articleMapper = articleMapper;
         this.followMapper = followMapper;
+        this.commentMapper = commentMapper;
+        this.notificationMapper = notificationMapper;
         this.redis = redis;
         this.passwordEncoder = passwordEncoder;
     }
@@ -143,16 +148,25 @@ public class V4Controller {
     // ============ 举报 ============
     @PostMapping("/report")
     public Result<Void> report(@RequestBody Map<String, Object> body) {
+        Long userId = UserContext.getUserId();
+        Long articleId = body.get("articleId") != null ? Long.valueOf(body.get("articleId").toString()) : null;
+        Long commentId = body.get("commentId") != null ? Long.valueOf(body.get("commentId").toString()) : null;
+        Long exists = reportMapper.selectCount(new LambdaQueryWrapper<Report>()
+                .eq(Report::getReporterId, userId)
+                .eq(articleId != null, Report::getArticleId, articleId)
+                .eq(commentId != null, Report::getCommentId, commentId)
+                .eq(Report::getStatus, "PENDING"));
+        if (exists > 0) throw new RuntimeException("您已举报过该内容，请勿重复举报");
         Report r = new Report();
-        r.setReporterId(UserContext.getUserId());
-        if (body.get("articleId") != null) {
+        r.setReporterId(userId);
+        if (articleId != null) {
             r.setTargetType("ARTICLE");
-            r.setTargetId(Long.valueOf(body.get("articleId").toString()));
-            r.setArticleId(Long.valueOf(body.get("articleId").toString()));
-        } else if (body.get("commentId") != null) {
+            r.setTargetId(articleId);
+            r.setArticleId(articleId);
+        } else if (commentId != null) {
             r.setTargetType("COMMENT");
-            r.setTargetId(Long.valueOf(body.get("commentId").toString()));
-            r.setCommentId(Long.valueOf(body.get("commentId").toString()));
+            r.setTargetId(commentId);
+            r.setCommentId(commentId);
         }
         r.setReason((String) body.get("reason"));
         r.setStatus("PENDING");
@@ -163,13 +177,22 @@ public class V4Controller {
     @GetMapping("/admin/reports")
     public Result<List<Report>> listReports() {
         return Result.success(reportMapper.selectList(
-                new LambdaQueryWrapper<Report>().orderByDesc(Report::getCreateTime)));
+                new LambdaQueryWrapper<Report>().orderByAsc(Report::getId)));
     }
 
     @PutMapping("/admin/reports/{id}/resolve")
     public Result<Void> resolveReport(@PathVariable Long id) {
         Report r = reportMapper.selectById(id);
-        if (r != null) { r.setStatus("RESOLVED"); reportMapper.updateById(r); }
+        if (r != null && !"RESOLVED".equals(r.getStatus())) {
+            r.setStatus("RESOLVED");
+            reportMapper.updateById(r);
+            Notification n = new Notification();
+            n.setUserId(r.getReporterId());
+            n.setFromUserId(1L);
+            n.setType("SYSTEM");
+            n.setContent("您的举报已经处理");
+            notificationMapper.insert(n);
+        }
         return Result.success(null);
     }
 
@@ -340,15 +363,23 @@ public class V4Controller {
     @GetMapping("/admin/articles")
     public Result<List<Article>> adminArticles() {
         return Result.success(articleMapper.selectList(
-                new LambdaQueryWrapper<Article>().orderByDesc(Article::getCreateTime)));
+                new LambdaQueryWrapper<Article>().orderByAsc(Article::getId)));
     }
 
     @PutMapping("/admin/article/{id}/offline")
     public Result<Void> offlineArticle(@PathVariable Long id) {
         Article a = articleMapper.selectById(id);
         if (a != null) {
-            a.setStatus(a.getStatus() != null && a.getStatus() == 1 ? 0 : 1);
+            boolean wasOffline = a.getStatus() != null && a.getStatus() == 0;
+            a.setStatus(wasOffline ? 1 : 0);
             articleMapper.updateById(a);
+            Notification n = new Notification();
+            n.setUserId(a.getUserId());
+            n.setFromUserId(1L);
+            n.setType("SYSTEM");
+            n.setArticleId(id);
+            n.setContent(wasOffline ? "您的文章《" + a.getTitle() + "》已恢复上架" : "您的文章《" + a.getTitle() + "》已被管理员下架");
+            notificationMapper.insert(n);
         }
         return Result.success(null);
     }
@@ -356,7 +387,115 @@ public class V4Controller {
     @PutMapping("/admin/user/{id}/ban")
     public Result<Void> banUser(@PathVariable Long id) {
         User u = userMapper.selectById(id);
-        if (u != null) { u.setStatus(0); userMapper.updateById(u); }
+        if (u != null) {
+            u.setStatus(u.getStatus() != null && u.getStatus() == 1 ? 0 : 1);
+            userMapper.updateById(u);
+        }
         return Result.success(null);
+    }
+
+    @GetMapping("/admin/users")
+    public Result<List<User>> adminUsers() {
+        return Result.success(userMapper.selectList(
+                new LambdaQueryWrapper<User>().orderByAsc(User::getId)));
+    }
+
+    @GetMapping("/admin/stats")
+    public Result<Map<String, Object>> adminStats() {
+        Map<String, Object> m = new HashMap<>();
+        m.put("userCount", userMapper.selectCount(null));
+        m.put("articleCount", articleMapper.selectCount(null));
+        m.put("pendingReports", reportMapper.selectCount(
+                new LambdaQueryWrapper<Report>().eq(Report::getStatus, "PENDING")));
+        m.put("commentCount", commentMapper.selectCount(null));
+        return Result.success(m);
+    }
+
+    @GetMapping("/admin/comments")
+    public Result<List<Comment>> adminComments() {
+        return Result.success(commentMapper.selectList(
+                new LambdaQueryWrapper<Comment>().orderByAsc(Comment::getId)));
+    }
+
+    @DeleteMapping("/admin/comment/{id}")
+    public Result<Void> delComment(@PathVariable Long id) {
+        Comment c = commentMapper.selectById(id);
+        if (c != null) {
+            commentMapper.deleteById(id);
+            Notification n = new Notification();
+            n.setUserId(c.getUserId());
+            n.setFromUserId(1L);
+            n.setType("SYSTEM");
+            n.setArticleId(c.getArticleId());
+            n.setContent("您的评论因被举报已被管理员删除");
+            notificationMapper.insert(n);
+        }
+        return Result.success(null);
+    }
+
+    @GetMapping("/admin/category-dist")
+    public Result<List<Map<String, Object>>> categoryDist() {
+        List<Article> all = articleMapper.selectList(null);
+        Map<String, Long> countMap = new HashMap<>();
+        for (Article a : all) {
+            String c = a.getCategory() != null ? a.getCategory() : "未分类";
+            countMap.merge(c, 1L, Long::sum);
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, Long> e : countMap.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", e.getKey());
+            item.put("count", e.getValue());
+            result.add(item);
+        }
+        return Result.success(result);
+    }
+
+    @GetMapping("/admin/week-trend")
+    public Result<List<Map<String, Object>>> weekTrend() {
+        List<Article> all = articleMapper.selectList(null);
+        Map<String, Long> countMap = new TreeMap<>();
+        for (int i = 6; i >= 0; i--) {
+            java.time.LocalDate d = java.time.LocalDate.now().minusDays(i);
+            countMap.put(d.toString(), 0L);
+        }
+        for (Article a : all) {
+            if (a.getCreateTime() != null) {
+                String day = a.getCreateTime().toLocalDate().toString();
+                countMap.merge(day, 1L, Long::sum);
+            }
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, Long> e : countMap.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("date", e.getKey().substring(5));
+            item.put("count", e.getValue());
+            result.add(item);
+        }
+        return Result.success(result);
+    }
+
+    @GetMapping("/admin/user-trend")
+    public Result<List<Map<String, Object>>> userTrend() {
+        List<User> all = userMapper.selectList(null);
+        Map<String, Long> countMap = new TreeMap<>();
+        for (int i = 6; i >= 0; i--) {
+            java.time.LocalDate d = java.time.LocalDate.now().minusDays(i);
+            countMap.put(d.toString(), 0L);
+        }
+        for (User u : all) {
+            if (u.getCreateTime() != null) {
+                String day = u.getCreateTime().toLocalDate().toString();
+                countMap.merge(day, 1L, Long::sum);
+            }
+        }
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, Long> e : countMap.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("date", e.getKey().substring(5));
+            item.put("count", e.getValue());
+            result.add(item);
+        }
+        return Result.success(result);
     }
 }

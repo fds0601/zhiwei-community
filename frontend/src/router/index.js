@@ -9,11 +9,9 @@ const routes = [
   { path: '/user/:id', name: 'Profile', component: () => import('../views/Profile.vue') },
   { path: '/tools', name: 'Tools', component: () => import('../views/Tools.vue') },
   { path: '/search', name: 'Search', component: () => import('../views/Search.vue') },
-  { path: '/hot', name: 'Hot', component: () => import('../views/Hot.vue') },
   { path: '/favorites', name: 'Favorites', component: () => import('../views/Favorites.vue'), meta: { requiresAuth: true } },
   { path: '/notifications', name: 'Notifications', component: () => import('../views/Notifications.vue'), meta: { requiresAuth: true } },
   { path: '/drafts', name: 'Drafts', component: () => import('../views/Drafts.vue'), meta: { requiresAuth: true } },
-  { path: '/tags', name: 'Tags', component: () => import('../views/Tags.vue') },
   { path: '/admin', name: 'Admin', component: () => import('../views/Admin.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

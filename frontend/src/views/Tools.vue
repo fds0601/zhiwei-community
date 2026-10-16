@@ -1,33 +1,31 @@
 <template>
-  <div class="container">
-    <div class="header">
-      <h2>AI工具广场</h2>
-      <el-button type="primary" @click="dialog = true">提交工具</el-button>
+  <div class="home-layout">
+    <div class="sidebar">
+      <div class="side-card">
+        <div v-for="c in categories" :key="c.name" class="side-item" :class="{active: category===c.name}" @click="category=c.name; loadList()">
+          <el-icon :size="16" style="vertical-align:middle;margin-right:6px"><component :is="c.icon" /></el-icon> {{ c.name || '全部' }}
+        </div>
+      </div>
     </div>
-    <div class="filter-bar">
-      <el-radio-group v-model="category" @change="loadList">
-        <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button label="AI开发平台">AI开发平台</el-radio-button>
-        <el-radio-button label="开发框架">开发框架</el-radio-button>
-        <el-radio-button label="模型部署">模型部署</el-radio-button>
-        <el-radio-button label="AI客户端">AI客户端</el-radio-button>
-        <el-radio-button label="向量数据库">向量数据库</el-radio-button>
-        <el-radio-button label="API管理">API管理</el-radio-button>
-      </el-radio-group>
-    </div>
-    <el-empty v-if="list.length === 0" description="暂无AI工具，快来提交第一个吧" />
-    <div class="tool-grid" v-else>
-      <div v-for="t in list" :key="t.id" class="tool-card" @click="openUrl(t.url)">
-        <h3>{{ t.name }}</h3>
-        <p>{{ t.description }}</p>
-        <el-tag size="small">{{ t.category }}</el-tag>
+    <div class="main-content">
+      <el-empty v-if="list.length === 0" description="暂无AI工具" />
+      <div v-for="t in list" :key="t.id" class="feed-item" @click="openUrl(t.url)">
+        <div class="feed-info">
+          <h3 class="feed-title">{{ t.name }}</h3>
+          <p class="feed-summary">{{ t.description }}</p>
+          <div class="feed-meta">
+            <el-tag size="small">{{ t.category }}</el-tag>
+          </div>
+        </div>
       </div>
     </div>
 
     <el-dialog v-model="dialog" title="提交AI工具" width="500px">
       <el-input v-model="form.name" placeholder="工具名称" style="margin-bottom:10px" />
       <el-input v-model="form.url" placeholder="官网地址 https://..." style="margin-bottom:10px" />
-      <el-input v-model="form.category" placeholder="分类（AI开发平台/开发框架/模型部署/AI客户端/向量数据库/API管理）" style="margin-bottom:10px" />
+      <el-select v-model="form.category" placeholder="选择分类" style="margin-bottom:10px;width:100%">
+        <el-option v-for="c in categories.filter(x=>x.name)" :key="c.name" :label="c.name" :value="c.name" />
+      </el-select>
       <el-input v-model="form.description" type="textarea" :rows="3" placeholder="工具简介" />
       <template #footer>
         <el-button @click="dialog = false">取消</el-button>
@@ -38,12 +36,26 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Odometer, Platform, Box, Cpu, Monitor, Coin, Document } from '@element-plus/icons-vue'
 import api from '../api'
 import { ElMessage } from 'element-plus'
 
+const route = useRoute()
+const router = useRouter()
+const token = ref(localStorage.getItem('token'))
 const list = ref([])
 const category = ref('')
+const categories = [
+  { name: '', icon: Odometer },
+  { name: 'AI开发平台', icon: Platform },
+  { name: '开发框架', icon: Box },
+  { name: '模型部署', icon: Cpu },
+  { name: 'AI客户端', icon: Monitor },
+  { name: '向量数据库', icon: Coin },
+  { name: 'API管理', icon: Document }
+]
 const dialog = ref(false)
 const form = reactive({ name: '', url: '', category: '', description: '' })
 
@@ -61,20 +73,34 @@ const submit = async () => {
     loadList()
   } catch (e) {}
 }
-onMounted(loadList)
+onMounted(() => {
+  loadList()
+  if (route.query.submit) {
+    dialog.value = true
+    history.replaceState(null, '', '/tools')
+  }
+  window.addEventListener('open-tool-dialog', () => {
+    if (!localStorage.getItem('token')) {
+      ElMessage.warning('请先登录')
+      setTimeout(() => router.push('/login'), 500)
+      return
+    }
+    dialog.value = true
+  })
+})
 </script>
 
 <style scoped>
-.container { max-width: 1000px; margin: 20px auto; padding: 0 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; }
-.filter-bar { margin: 15px 0; }
-.tool-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
-.tool-card {
-  background: #fff; padding: 20px; border-radius: 8px; cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-.tool-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
-.tool-card h3 { margin: 0 0 8px; font-size: 16px; }
-.tool-card p { color: #666; font-size: 13px; height: 40px; overflow: hidden; }
-.likes { float: right; color: #999; font-size: 12px; }
+.home-layout { display: flex; gap: 16px; max-width: 1100px; margin: 20px auto; padding: 0 20px; }
+.sidebar { width: 200px; flex-shrink: 0; }
+.side-card { background: #fff; border-radius: 8px; padding: 12px 0; }
+.side-item { padding: 10px 16px; cursor: pointer; color: #555; }
+.side-item:hover { background: #f5f7fa; }
+.side-item.active { background: #e8f3ff; color: #1e80ff; }
+.main-content { flex: 1; background: #fff; border-radius: 8px; padding: 20px; }
+.feed-item { padding: 16px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+.feed-item:last-child { border-bottom: none; }
+.feed-title { margin: 0 0 6px; font-size: 16px; }
+.feed-summary { color: #666; font-size: 13px; margin: 0 0 8px; }
+.feed-meta { display: flex; gap: 8px; }
 </style>

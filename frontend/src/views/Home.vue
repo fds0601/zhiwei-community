@@ -44,8 +44,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import api from '../api'
 
+const router = useRouter()
 const list = ref([])
 const page = ref(1)
 const size = ref(10)
@@ -56,7 +59,14 @@ const categories = ['后端开发','前端开发','AI应用','数据库','架构
 const iconMap = { '后端开发':'Cpu', '前端开发':'Brush', 'AI应用':'ChatDotRound', '数据库':'Coin', '架构设计':'OfficeBuilding', '运维部署':'Setting', '云原生':'Cloudy', '职业成长':'TrendCharts', '开源项目':'Box', '其他':'Folder' }
 
 const selectCategory = (c) => { category.value = category.value===c ? '' : c; page.value=1; tab.value='recommend'; loadList() }
-const switchTab = (t) => { tab.value=t; page.value=1; loadList() }
+const switchTab = (t) => {
+  if (t === 'follow' && !localStorage.getItem('token')) {
+    ElMessage.warning('请先登录')
+    setTimeout(() => router.push('/login'), 500)
+    return
+  }
+  tab.value=t; page.value=1; loadList()
+}
 
 const loadList = async () => {
   const params = { page: page.value, size: size.value, category: category.value }

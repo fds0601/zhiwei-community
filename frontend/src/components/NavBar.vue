@@ -10,25 +10,13 @@
         <router-link to="/tools" class="nav-link">AI工具</router-link>
       </div>
       <div class="nav-right">
-        <div class="search-box" @focusin="onSearchFocus" @focusout="onSearchBlur">
-          <el-input v-model="keyword" placeholder="搜索文章" style="width:220px"
-            @keyup.enter="doSearch" @input="onSearchInput">
-            <template #prefix>
+        <div class="search-box">
+          <el-input v-model="keyword" placeholder="搜索文章/标签/用户" style="width:220px"
+            @keyup.enter="doSearch">
+            <template #suffix>
               <el-icon style="cursor:pointer" @click="doSearch"><Search /></el-icon>
             </template>
           </el-input>
-          <div v-if="searchPop" class="search-dropdown">
-            <div v-if="suggestions.length" class="section">
-              <div class="section-title">搜索联想</div>
-              <div v-for="s in suggestions" :key="s" class="suggest-item" @mousedown.prevent="pickSuggest(s)">{{ s }}</div>
-            </div>
-            <div class="section">
-              <div class="section-title">热门搜索</div>
-              <div class="hot-words">
-                <el-tag v-for="w in hotWords" :key="w" size="small" class="hot-tag" @mousedown.prevent="pickSuggest(w)">{{ w }}</el-tag>
-              </div>
-            </div>
-          </div>
         </div>
         <el-dropdown v-if="token" trigger="hover" class="publish-dropdown" @command="handleCommand">
           <span class="publish-btn">创作者中心 <el-icon><ArrowDown /></el-icon></span>
@@ -36,6 +24,7 @@
             <el-dropdown-menu>
               <el-dropdown-item command="publish"><el-icon style="vertical-align:middle;margin-right:6px"><EditPen /></el-icon>写文章</el-dropdown-item>
               <el-dropdown-item command="drafts"><el-icon style="vertical-align:middle;margin-right:6px"><Document /></el-icon>草稿箱</el-dropdown-item>
+              <el-dropdown-item command="tool"><el-icon style="vertical-align:middle;margin-right:6px"><Tools /></el-icon>提交AI工具</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -49,14 +38,21 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="profile"><el-icon style="vertical-align:middle;margin-right:6px"><User /></el-icon>个人主页</el-dropdown-item>
                 <el-dropdown-item command="favorites"><el-icon style="vertical-align:middle;margin-right:6px"><Star /></el-icon>我的收藏</el-dropdown-item>
-                <el-dropdown-item command="notifications"><el-icon style="vertical-align:middle;margin-right:6px"><Bell /></el-icon>消息通知</el-dropdown-item>
+                <el-dropdown-item command="notifications">
+                  <el-icon style="vertical-align:middle;margin-right:6px"><Bell /></el-icon>消息通知
+                  <el-badge v-if="unread > 0" :value="unread" :max="99" class="nav-badge" />
+                </el-dropdown-item>
                 <el-dropdown-item v-if="role==='ADMIN'" command="admin"><el-icon style="vertical-align:middle;margin-right:6px"><Setting /></el-icon>管理后台</el-dropdown-item>
                 <el-dropdown-item divided command="logout"><el-icon style="vertical-align:middle;margin-right:6px"><SwitchButton /></el-icon>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </template>
-        <router-link to="/login" v-else class="login-btn">登录</router-link>
+        <div v-else class="login-btn-group">
+          <router-link to="/login" class="login-btn">登录</router-link>
+          <span class="divider">|</span>
+          <router-link to="/login?register=1" class="register-btn">注册</router-link>
+        </div>
       </div>
     </div>
   </div>
@@ -65,7 +61,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowDown, Search, Bell, EditPen, Document, User, Star, Setting, SwitchButton } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { ArrowDown, Search, Bell, EditPen, Document, User, Star, Setting, SwitchButton, Tools } from '@element-plus/icons-vue'
 import api from '../api'
 
 const router = useRouter()
@@ -119,6 +116,18 @@ const logout = () => {
 const handleCommand = (cmd) => {
   if (cmd === 'publish') router.push('/publish')
   else if (cmd === 'drafts') router.push('/drafts')
+  else if (cmd === 'tool') {
+    if (!localStorage.getItem('token')) {
+      ElMessage.warning('请先登录')
+      setTimeout(() => router.push('/login'), 500)
+      return
+    }
+    if (window.location.pathname === '/tools') {
+      window.dispatchEvent(new Event('open-tool-dialog'))
+    } else {
+      router.push('/tools?submit=1')
+    }
+  }
   else if (cmd === 'profile') router.push('/user/' + userId.value)
   else if (cmd === 'favorites') router.push('/favorites')
   else if (cmd === 'notifications') router.push('/notifications')
@@ -128,6 +137,7 @@ const handleCommand = (cmd) => {
 </script>
 
 <style scoped>
+.nav-badge :deep(.el-badge__content) { top: -4px; right: -8px; transform: scale(0.7); }
 .navbar { background: #fff; border-bottom: 1px solid #e8e8e8; position: sticky; top: 0; z-index: 100; }
 .navbar-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; padding: 0 20px; height: 56px; gap: 20px; }
 .logo { display: flex; align-items: center; gap: 6px; font-size: 20px; font-weight: bold; color: #1e80ff; text-decoration: none; }
@@ -139,7 +149,10 @@ const handleCommand = (cmd) => {
 .publish-dropdown .el-tooltip__trigger, .publish-dropdown .el-tooltip__trigger:focus { outline: none; border: none; box-shadow: none; }
 .publish-btn .el-icon { transition: transform 0.2s; }
 .publish-dropdown:hover .publish-btn .el-icon { transform: rotate(180deg); }
-.login-btn { color: #1e80ff; text-decoration: none; font-size: 14px; }
+.login-btn-group { background: #1e80ff; border-radius: 6px; padding: 6px 16px; display: flex; gap: 8px; align-items: center; }
+.login-btn { color: #fff; text-decoration: none; font-size: 14px; }
+.register-btn { color: #fff; text-decoration: none; font-size: 14px; }
+.divider { color: rgba(255,255,255,0.5); }
 .username { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; outline: none; }
 .username .el-icon { transition: transform 0.2s; }
 .username:hover .el-icon { transform: rotate(180deg); }

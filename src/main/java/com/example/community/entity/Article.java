@@ -24,6 +24,8 @@ public class Article {
 
     @TableField(exist = false)
     private String nickname;
+    @TableField(exist = false)
+    private String avatarUrl;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -55,4 +57,6 @@ public class Article {
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

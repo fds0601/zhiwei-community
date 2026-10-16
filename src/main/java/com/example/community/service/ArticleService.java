@@ -156,15 +156,48 @@ public class ArticleService {
                             .last("LIMIT 5"));
         }
 
-        // 填充文章作者昵称
+        // 填充文章作者昵称和头像
         com.example.community.entity.User author = userMapper.selectById(article.getUserId());
-        if (author != null) article.setNickname(author.getNickname());
+        if (author != null) {
+            article.setNickname(author.getNickname());
+            article.setAvatarUrl(author.getAvatar());
+        }
+
+        // 查询是否已关注作者
+        boolean following = false;
+        if (currentUserId != null) {
+            following = followMapper.selectCount(
+                    new LambdaQueryWrapper<Follow>()
+                            .eq(Follow::getUserId, currentUserId)
+                            .eq(Follow::getFollowId, article.getUserId())) > 0;
+        }
+
+        // 作者统计
+        long authorArticleCount = articleMapper.selectCount(
+                new LambdaQueryWrapper<Article>().eq(Article::getUserId, article.getUserId()).eq(Article::getStatus, 1));
+        Long authorLikeCount = articleMapper.selectCount(
+                new LambdaQueryWrapper<Article>().eq(Article::getUserId, article.getUserId()).gt(Article::getLikeCount, 0));
+        long authorFollowerCount = followMapper.selectCount(
+                new LambdaQueryWrapper<Follow>().eq(Follow::getFollowId, article.getUserId()));
+
+        // 相关推荐补全浏览量和赞
+        for (Article r : related) {
+            Article full = articleMapper.selectById(r.getId());
+            if (full != null) {
+                r.setViewCount(full.getViewCount());
+                r.setLikeCount(full.getLikeCount());
+            }
+        }
 
         Map<String, Object> result = new HashMap<>();
         result.put("article", article);
         result.put("comments", comments);
         result.put("liked", liked);
         result.put("favorited", favorited);
+        result.put("following", following);
+        result.put("authorArticleCount", authorArticleCount);
+        result.put("authorLikeCount", authorLikeCount);
+        result.put("authorFollowerCount", authorFollowerCount);
         result.put("related", related);
         return result;
     }
@@ -202,7 +235,8 @@ public class ArticleService {
         if (keyword != null && !keyword.isEmpty()) {
             wrapper.and(w -> w.like(Article::getTitle, keyword)
                     .or().like(Article::getSummary, keyword)
-                    .or().like(Article::getTags, keyword));
+                    .or().like(Article::getTags, keyword)
+                    .or().inSql(Article::getUserId, "SELECT id FROM user WHERE nickname LIKE '%" + keyword.replace("'", "") + "%'"));
         }
         if ("likes".equals(sort)) wrapper.orderByDesc(Article::getLikeCount);
         else if ("views".equals(sort)) wrapper.orderByDesc(Article::getViewCount);
@@ -422,6 +456,15 @@ public class ArticleService {
         commentLikeMapper.insert(cl);
         commentMapper.update(null, Wrappers.<Comment>lambdaUpdate()
                 .eq(Comment::getId, commentId).setSql("like_count = like_count + 1"));
+        if (!c.getUserId().equals(userId)) {
+            Notification n = new Notification();
+            n.setUserId(c.getUserId());
+            n.setFromUserId(userId);
+            n.setType("LIKE");
+            n.setArticleId(c.getArticleId());
+            n.setContent("赞了你的评论");
+            notificationMapper.insert(n);
+        }
         return "点赞成功";
     }
 

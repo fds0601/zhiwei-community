@@ -25,3 +25,7 @@ logs/
 src/main/resources/application-local.yml
 
 uploads/
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/

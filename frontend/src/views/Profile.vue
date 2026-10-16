@@ -139,13 +139,14 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '../api'
 import ArticleCard from '../components/ArticleCard.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Camera } from '@element-plus/icons-vue'
 
 const route = useRoute()
+const router = useRouter()
 const list = ref([])
 const nickname = ref('用户')
 const bio = ref('')
@@ -208,6 +209,7 @@ const loadData = async () => {
 }
 
 const doFollow = async () => {
+  if (!localStorage.getItem('token')) { ElMessage.warning('请先登录'); setTimeout(() => router.push('/login'), 500); return }
   const res = await api.post(`/user/${route.params.id}/follow`)
   ElMessage.success(res.data)
   followed.value = !followed.value

@@ -14,14 +14,19 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { reactive, ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import api from '../api'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const isLogin = ref(true)
 const form = reactive({ username: '', password: '', nickname: '', email: '', phone: '' })
+
+onMounted(() => {
+  if (route.query.register) isLogin.value = false
+})
 
 const submit = async () => {
   try {
