@@ -140,6 +140,7 @@ const saveProfile = async () => {
   ElMessage.success('已保存')
   showEdit.value = false
   localStorage.setItem('nickname', editForm.value.nickname)
+  localStorage.setItem('avatar', editForm.value.avatar || '')
   loadData()
 }
 

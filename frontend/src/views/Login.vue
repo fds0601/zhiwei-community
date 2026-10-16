@@ -28,6 +28,8 @@ const submit = async () => {
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('nickname', res.data.nickname)
       localStorage.setItem('userId', res.data.userId)
+      localStorage.setItem('role', res.data.role || 'USER')
+      localStorage.setItem('avatar', res.data.avatar || '')
       ElMessage.success('登录成功')
       window.location.href = '/'
     } else {

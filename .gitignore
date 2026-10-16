@@ -23,3 +23,5 @@ logs/
 
 ### Env ###
 src/main/resources/application-local.yml
+
+uploads/

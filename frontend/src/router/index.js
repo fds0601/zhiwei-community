@@ -15,6 +15,7 @@ const routes = [
   { path: '/drafts', name: 'Drafts', component: () => import('../views/Drafts.vue'), meta: { requiresAuth: true } },
   { path: '/tags', name: 'Tags', component: () => import('../views/Tags.vue') },
   { path: '/admin', name: 'Admin', component: () => import('../views/Admin.vue'), meta: { requiresAuth: true } },
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({

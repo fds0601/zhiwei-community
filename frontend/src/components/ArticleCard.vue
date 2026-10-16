@@ -12,7 +12,9 @@
         </span>
       </div>
     </div>
-    <el-image v-if="article.coverUrl" :src="article.coverUrl" fit="cover" class="cover" />
+    <el-image v-if="article.coverUrl" :src="article.coverUrl" fit="cover" class="cover">
+      <template #error><div style="width:120px"></div></template>
+    </el-image>
   </div>
 </template>
 

@@ -59,6 +59,7 @@ public class UserController {
         m.put("username", u.getUsername());
         m.put("bio", u.getBio());
         m.put("avatar", u.getAvatar());
+        m.put("banner", u.getBanner());
         m.put("followerCount", followMapper.selectCount(
                 new LambdaQueryWrapper<Follow>().eq(Follow::getFollowId, userId)));
         m.put("followCount", followMapper.selectCount(
@@ -110,8 +111,23 @@ public class UserController {
         User u = userMapper.selectById(me);
         if (body.get("nickname") != null) u.setNickname(body.get("nickname"));
         if (body.get("bio") != null) u.setBio(body.get("bio"));
-        if (body.get("avatar") != null) u.setAvatar(body.get("avatar"));
+        if (body.get("avatar") != null && !body.get("avatar").equals(u.getAvatar())) {
+            deleteUploadedFile(u.getAvatar());
+            u.setAvatar(body.get("avatar"));
+        }
+        if (body.get("banner") != null && !body.get("banner").equals(u.getBanner())) {
+            deleteUploadedFile(u.getBanner());
+            u.setBanner(body.get("banner"));
+        }
         userMapper.updateById(u);
         return Result.success();
+    }
+
+    private void deleteUploadedFile(String url) {
+        if (url != null && url.startsWith("/uploads/")) {
+            try {
+                java.nio.file.Files.deleteIfExists(java.nio.file.Paths.get("uploads/" + url.substring("/uploads/".length())));
+            } catch (Exception ignored) {}
+        }
     }
 }

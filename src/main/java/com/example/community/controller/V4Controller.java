@@ -333,7 +333,10 @@ public class V4Controller {
     @PutMapping("/admin/article/{id}/offline")
     public Result<Void> offlineArticle(@PathVariable Long id) {
         Article a = articleMapper.selectById(id);
-        if (a != null) { a.setStatus(0); articleMapper.updateById(a); }
+        if (a != null) {
+            a.setStatus(a.getStatus() != null && a.getStatus() == 1 ? 0 : 1);
+            articleMapper.updateById(a);
+        }
         return Result.success(null);
     }
 

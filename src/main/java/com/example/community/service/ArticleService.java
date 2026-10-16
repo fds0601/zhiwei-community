@@ -153,6 +153,10 @@ public class ArticleService {
                             .last("LIMIT 5"));
         }
 
+        // 填充文章作者昵称
+        com.example.community.entity.User author = userMapper.selectById(article.getUserId());
+        if (author != null) article.setNickname(author.getNickname());
+
         Map<String, Object> result = new HashMap<>();
         result.put("article", article);
         result.put("comments", comments);

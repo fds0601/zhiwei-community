@@ -55,6 +55,7 @@ public class UserService {
         result.put("token", token);
         result.put("userId", user.getId());
         result.put("nickname", user.getNickname());
+        result.put("avatar", user.getAvatar());
         result.put("role", user.getRole());
         return result;
     }
