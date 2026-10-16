@@ -2,7 +2,11 @@
   <div class="navbar">
     <div class="navbar-inner">
       <router-link to="/" class="logo">
-        <el-icon :size="24" color="#1e80ff"><Compass /></el-icon>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="#1e80ff" stroke-width="2" fill="none"/>
+          <path d="M12 5L15 12L12 19L9 12L12 5Z" fill="#1e80ff" transform="rotate(45 12 12)"/>
+          <path d="M12 12L15 12L12 19L9 12Z" fill="#fff" stroke="#1e80ff" stroke-width="1" transform="rotate(45 12 12)"/>
+        </svg>
         <span>知微</span>
       </router-link>
       <div class="nav-links">
