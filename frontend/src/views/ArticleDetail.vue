@@ -10,12 +10,15 @@
         <span v-for="tag in tags" :key="tag" class="tag">#{{ tag }}</span>
         <span>{{ article.viewCount }} 浏览 · {{ article.likeCount }} 赞 · {{ article.createTime?.substring(0,10) }}</span>
       </div>
-      <el-image v-if="article.coverUrl" :src="article.coverUrl" fit="cover" class="cover" />
+      <div v-if="article.coverUrl" class="cover-wrap">
+        <img :src="article.coverUrl" class="cover" />
+      </div>
       <div class="content" v-html="renderedContent"></div>
       <div class="actions">
         <el-button :type="liked ? 'primary' : 'default'" @click="doLike" :icon="Star">{{ liked ? '已点赞' : '点赞' }}</el-button>
         <el-button :type="favorited ? 'primary' : 'default'" @click="doFavorite" :icon="Collection">{{ favorited ? '已收藏' : '收藏' }}</el-button>
         <el-button v-if="isAuthor" type="warning" @click="$router.push('/publish/' + article.id)">编辑文章</el-button>
+        <el-button v-if="isAuthor" type="danger" @click="doDelete">删除文章</el-button>
         <el-divider style="margin:10px 0" />
         <div class="reactions">
           <span class="reaction-label">觉得这篇文章：</span>
@@ -71,7 +74,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'dompurify'
 import api from '../api'
@@ -79,7 +82,8 @@ import { Star, Collection } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
-const md = new MarkdownIt()
+const router = useRouter()
+const md = new MarkdownIt({ linkify: true, breaks: true })
 const article = ref(null)
 const comments = ref([])
 const related = ref([])
@@ -119,6 +123,15 @@ const doFavorite = async () => {
     const res = await api.post(`/article/${route.params.id}/favorite`)
     ElMessage.success(res.data)
     favorited.value = !favorited.value
+  } catch (e) {}
+}
+
+const doDelete = async () => {
+  try {
+    await ElMessageBox.confirm('确认删除这篇文章？删除后不可恢复', '警告', { type: 'warning' })
+    await api.delete('/article/' + route.params.id)
+    ElMessage.success('已删除')
+    router.push('/')
   } catch (e) {}
 }
 const doComment = async () => {
@@ -184,7 +197,8 @@ const reportArticle = async () => {
 .author { color: #1e80ff; cursor: pointer; font-weight: 500; }
 .author:hover { text-decoration: underline; }
 .tag { color: #1e80ff; }
-.cover { width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 20px; }
+.cover-wrap { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+.cover { width: 100%; display: block; }
 .content { line-height: 1.8; font-size: 15px; }
 .actions { margin: 20px 0; }
 .reactions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }

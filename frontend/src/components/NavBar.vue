@@ -7,9 +7,7 @@
       </router-link>
       <div class="nav-links">
         <router-link to="/" class="nav-link">首页</router-link>
-        <router-link to="/hot" class="nav-link">热门</router-link>
         <router-link to="/tools" class="nav-link">AI工具</router-link>
-        <router-link to="/tags" class="nav-link">标签</router-link>
       </div>
       <div class="nav-right">
         <div class="search-box" @focusin="onSearchFocus" @focusout="onSearchBlur">
@@ -32,24 +30,28 @@
             </div>
           </div>
         </div>
-        <router-link to="/publish" v-if="token" class="publish-btn">写文章</router-link>
+        <el-dropdown v-if="token" trigger="hover" class="publish-dropdown" @command="handleCommand">
+          <span class="publish-btn">创作者中心 <el-icon><ArrowDown /></el-icon></span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="publish"><el-icon style="vertical-align:middle;margin-right:6px"><EditPen /></el-icon>写文章</el-dropdown-item>
+              <el-dropdown-item command="drafts"><el-icon style="vertical-align:middle;margin-right:6px"><Document /></el-icon>草稿箱</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <template v-if="token">
-          <el-badge :value="unread" :hidden="unread===0" class="bell">
-            <el-icon :size="20" @click="$router.push('/notifications')" style="cursor:pointer"><Bell /></el-icon>
-          </el-badge>
-          <el-dropdown trigger="click" @command="handleCommand">
+          <el-dropdown trigger="hover" @command="handleCommand">
             <span class="username">
               <el-avatar :size="28" :src="avatarUrl || undefined" style="vertical-align:middle">{{ nickname[0] }}</el-avatar>
               {{ nickname }} <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="profile">个人主页</el-dropdown-item>
-                <el-dropdown-item command="drafts">我的草稿</el-dropdown-item>
-                <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
-                <el-dropdown-item command="notifications">消息通知</el-dropdown-item>
-                <el-dropdown-item v-if="role==='ADMIN'" command="admin">管理后台</el-dropdown-item>
-                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile"><el-icon style="vertical-align:middle;margin-right:6px"><User /></el-icon>个人主页</el-dropdown-item>
+                <el-dropdown-item command="favorites"><el-icon style="vertical-align:middle;margin-right:6px"><Star /></el-icon>我的收藏</el-dropdown-item>
+                <el-dropdown-item command="notifications"><el-icon style="vertical-align:middle;margin-right:6px"><Bell /></el-icon>消息通知</el-dropdown-item>
+                <el-dropdown-item v-if="role==='ADMIN'" command="admin"><el-icon style="vertical-align:middle;margin-right:6px"><Setting /></el-icon>管理后台</el-dropdown-item>
+                <el-dropdown-item divided command="logout"><el-icon style="vertical-align:middle;margin-right:6px"><SwitchButton /></el-icon>退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -63,7 +65,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowDown, Search, Bell } from '@element-plus/icons-vue'
+import { ArrowDown, Search, Bell, EditPen, Document, User, Star, Setting, SwitchButton } from '@element-plus/icons-vue'
 import api from '../api'
 
 const router = useRouter()
@@ -99,7 +101,7 @@ const onSearchInput = async () => {
 const onSearchFocus = async () => {
   searchPop.value = true
   if (!hotWords.value.length) {
-    try { const res = await api.get('/search/hot'); hotWords.value = res.data || [] } catch (e) {}
+    try { const res = await api.get('/search/hot'); hotWords.value = (res.data || []).filter(w => w.length >= 3).slice(0, 10) } catch (e) {}
   }
 }
 const onSearchBlur = () => {
@@ -115,9 +117,10 @@ const logout = () => {
   window.location.href = '/'
 }
 const handleCommand = (cmd) => {
-  if (cmd === 'profile') router.push('/user/' + userId.value)
-  else if (cmd === 'favorites') router.push('/favorites')
+  if (cmd === 'publish') router.push('/publish')
   else if (cmd === 'drafts') router.push('/drafts')
+  else if (cmd === 'profile') router.push('/user/' + userId.value)
+  else if (cmd === 'favorites') router.push('/favorites')
   else if (cmd === 'notifications') router.push('/notifications')
   else if (cmd === 'admin') router.push('/admin')
   else if (cmd === 'logout') logout()
@@ -132,9 +135,16 @@ const handleCommand = (cmd) => {
 .nav-link { color: #555; text-decoration: none; font-size: 14px; }
 .nav-link:hover { color: #1e80ff; }
 .nav-right { margin-left: auto; display: flex; align-items: center; gap: 15px; }
-.publish-btn { background: #1e80ff; color: #fff; padding: 6px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; }
+.publish-btn { background: #1e80ff; color: #fff; padding: 6px 16px; border-radius: 4px; text-decoration: none; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; outline: none; }
+.publish-dropdown .el-tooltip__trigger, .publish-dropdown .el-tooltip__trigger:focus { outline: none; border: none; box-shadow: none; }
+.publish-btn .el-icon { transition: transform 0.2s; }
+.publish-dropdown:hover .publish-btn .el-icon { transform: rotate(180deg); }
 .login-btn { color: #1e80ff; text-decoration: none; font-size: 14px; }
-.username { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+.username { cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; outline: none; }
+.username .el-icon { transition: transform 0.2s; }
+.username:hover .el-icon { transform: rotate(180deg); }
+.el-tooltip__trigger { outline: none !important; }
+.el-tooltip__trigger:focus { outline: none !important; box-shadow: none !important; }
 .bell { font-size: 18px; }
 .search-panel { padding: 8px 0; }
 .search-box { position: relative; }

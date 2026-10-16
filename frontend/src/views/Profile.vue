@@ -27,38 +27,96 @@
     <ArticleCard v-for="a in list" :key="a.id" :article="a" />
 
     <!-- 编辑资料 -->
-    <el-dialog v-model="showEdit" title="编辑资料" width="460px" append-to-body>
-      <div style="display:flex;align-items:center;gap:15px;margin-bottom:15px">
-        <el-avatar :size="60" :src="editForm.avatar || undefined">{{ nickname[0] }}</el-avatar>
-        <el-upload :show-file-list="false" action="/api/upload" :headers="uploadHeaders"
-          :on-success="onAvatarUpload" :before-upload="beforeUpload">
-          <el-button size="small" type="primary">上传头像</el-button>
-        </el-upload>
+    <el-dialog v-model="showEdit" title="编辑资料" width="520px" append-to-body>
+      <!-- 背景图预览 -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">主页背景图</div>
+        <div style="position:relative;border-radius:8px;overflow:hidden;height:100px;background:#f0f2f5">
+          <img v-if="editForm.banner" :src="editForm.banner" style="width:100%;height:100%;object-fit:cover" />
+          <el-upload :show-file-list="false" action="/api/upload" :headers="uploadHeaders"
+            :on-success="onBannerUpload" :before-upload="beforeUpload"
+            style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(0,0,0,.3)">
+            <div style="color:#fff;font-size:13px">{{ editForm.banner ? '点击更换背景图' : '点击上传背景图' }}</div>
+          </el-upload>
+        </div>
       </div>
-      <el-input v-model="editForm.nickname" placeholder="昵称" style="margin-bottom:10px" />
-      <el-input v-model="editForm.bio" type="textarea" placeholder="简介" style="margin-bottom:10px" />
-      <el-input v-model="editForm.banner" placeholder="背景图URL" style="margin-bottom:10px" />
-      <el-upload :show-file-list="false" action="/api/upload" :headers="uploadHeaders"
-        :on-success="onBannerUpload" :before-upload="beforeUpload">
-        <el-button size="small">上传背景图</el-button>
-      </el-upload>
-      <el-button type="primary" @click="saveProfile" style="margin-top:10px">保存</el-button>
+      <!-- 头像 -->
+      <div style="display:flex;align-items:center;gap:15px;margin-bottom:16px">
+        <div style="position:relative;cursor:pointer;width:64px;height:64px">
+          <el-avatar :size="64" :src="editForm.avatar || undefined">{{ nickname[0] }}</el-avatar>
+          <el-upload :show-file-list="false" action="/api/upload" :headers="uploadHeaders"
+            :on-success="onAvatarUpload" :before-upload="beforeUpload"
+            style="position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)">
+            <el-icon style="color:#fff;font-size:20px"><Camera /></el-icon>
+          </el-upload>
+        </div>
+        <div style="font-size:13px;color:#999">点击头像可更换</div>
+      </div>
+      <!-- 昵称 -->
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">昵称</div>
+        <el-input v-model="editForm.nickname" maxlength="20" show-word-limit />
+      </div>
+      <!-- 简介 -->
+      <div style="margin-bottom:18px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">个人简介</div>
+        <el-input v-model="editForm.bio" type="textarea" :rows="3" maxlength="100" show-word-limit placeholder="介绍一下自己吧" />
+      </div>
+      <template #footer>
+        <el-button @click="showEdit = false">取消</el-button>
+        <el-button type="primary" @click="saveProfile">保存</el-button>
+      </template>
     </el-dialog>
 
     <!-- 修改密码 -->
-    <el-dialog v-model="showPwd" title="修改密码" width="400px">
-      <el-input v-model="pwdForm.oldPassword" type="password" placeholder="原密码" style="margin-bottom:10px" />
-      <el-input v-model="pwdForm.newPassword" type="password" placeholder="新密码" style="margin-bottom:10px" />
-      <el-button type="primary" @click="changePwd">确认修改</el-button>
+    <el-dialog v-model="showPwd" title="修改密码" width="440px">
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">原密码</div>
+        <el-input v-model="pwdForm.oldPassword" type="password" show-password placeholder="请输入原密码" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">新密码</div>
+        <el-input v-model="pwdForm.newPassword" type="password" show-password placeholder="6-20位新密码" />
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">确认新密码</div>
+        <el-input v-model="pwdForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+      </div>
+      <template #footer>
+        <el-button @click="showPwd = false">取消</el-button>
+        <el-button type="primary" @click="changePwd">确认修改</el-button>
+      </template>
     </el-dialog>
 
     <!-- 账号设置 -->
-    <el-dialog v-model="showSettings" title="账号设置" width="420px">
-      <el-input v-model="phone" placeholder="绑定手机号" style="margin-bottom:10px" />
-      <el-button @click="bindPhone" style="margin-bottom:20px">保存手机号</el-button>
+    <el-dialog v-model="showSettings" title="账号设置" width="440px">
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">用户名（登录名）</div>
+        <div style="display:flex;gap:10px">
+          <el-input v-model="settingsForm.username" placeholder="3-20位字母数字下划线" />
+          <el-button type="primary" @click="changeUsername">保存</el-button>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">绑定邮箱</div>
+        <div style="display:flex;gap:10px">
+          <el-input v-model="settingsForm.email" placeholder="example@mail.com" />
+          <el-button type="primary" @click="bindEmail">保存</el-button>
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:13px;color:#666;margin-bottom:6px">绑定手机号</div>
+        <div style="display:flex;gap:10px">
+          <el-input v-model="settingsForm.phone" placeholder="请输入手机号" maxlength="11" />
+          <el-button type="primary" @click="bindPhone">保存</el-button>
+        </div>
+      </div>
       <el-divider />
-      <div style="color:#e6a23c;font-size:13px;margin-bottom:10px">危险操作</div>
-      <el-button type="danger" plain @click="deactivate">注销账号</el-button>
+      <div style="background:#fef0f0;border-radius:8px;padding:14px">
+        <div style="color:#f56c6c;font-size:13px;font-weight:600;margin-bottom:6px">危险操作</div>
+        <div style="color:#999;font-size:12px;margin-bottom:10px">注销后账号将被永久删除，所有数据无法恢复</div>
+        <el-button type="danger" plain size="small" @click="deactivate">注销账号</el-button>
+      </div>
     </el-dialog>
 
     <!-- 粉丝列表 -->
@@ -85,6 +143,7 @@ import { useRoute } from 'vue-router'
 import api from '../api'
 import ArticleCard from '../components/ArticleCard.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Camera } from '@element-plus/icons-vue'
 
 const route = useRoute()
 const list = ref([])
@@ -103,9 +162,25 @@ const showFollowers = ref(false)
 const showFollowing = ref(false)
 const followers = ref([])
 const following = ref([])
-const phone = ref('')
+const settingsForm = ref({ username: '', email: '', phone: '' })
+
+const bindEmail = async () => {
+  await api.put('/user/email', { email: settingsForm.value.email })
+  ElMessage.success('邮箱已绑定')
+}
+
+const bindPhone = async () => {
+  await api.put('/user/phone', { phone: settingsForm.value.phone })
+  ElMessage.success('手机号已绑定')
+}
+
+const changeUsername = async () => {
+  await api.put('/user/username', { username: settingsForm.value.username })
+  ElMessage.success('用户名已修改，需重新登录')
+  setTimeout(() => { localStorage.clear(); window.location.href = '/login' }, 1500)
+}
 const editForm = ref({ nickname: '', bio: '', avatar: '', banner: '' })
-const pwdForm = ref({ oldPassword: '', newPassword: '' })
+const pwdForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
 const myUserId = ref(localStorage.getItem('userId'))
 const authHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token') }
 const uploadHeaders = { Authorization: 'Bearer ' + localStorage.getItem('token') }
@@ -127,6 +202,9 @@ const loadData = async () => {
   followCount.value = userRes.data.followCount
   followed.value = userRes.data.followed
   stats.value = statRes.data
+  settingsForm.value.username = userRes.data.username || ''
+  settingsForm.value.email = userRes.data.email || ''
+  settingsForm.value.phone = userRes.data.phone || ''
 }
 
 const doFollow = async () => {
@@ -145,11 +223,19 @@ const saveProfile = async () => {
 }
 
 const changePwd = async () => {
+  if (!pwdForm.value.oldPassword) return ElMessage.warning('请输入原密码')
+  if (!pwdForm.value.newPassword || pwdForm.value.newPassword.length < 6) return ElMessage.warning('新密码至少6位')
+  if (pwdForm.value.newPassword !== pwdForm.value.confirmPassword) return ElMessage.warning('两次密码不一致')
   try {
-    await api.put('/user/password', pwdForm.value)
-    ElMessage.success('密码已修改')
+    await api.put('/user/password', { oldPassword: pwdForm.value.oldPassword, newPassword: pwdForm.value.newPassword })
+    ElMessage.success('密码已修改，请重新登录')
     showPwd.value = false
-  } catch (e) { ElMessage.error('原密码错误') }
+    pwdForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+    setTimeout(() => {
+      localStorage.clear()
+      window.location.href = '/login'
+    }, 1500)
+  } catch (e) {}
 }
 
 const beforeUpload = (file) => {
@@ -168,11 +254,6 @@ const onBannerUpload = (res) => {
     editForm.value.banner = res.data.url
     ElMessage.success('背景图上传成功，点保存生效')
   } else ElMessage.error('上传失败')
-}
-
-const bindPhone = async () => {
-  await api.put('/user/phone', { phone: phone.value })
-  ElMessage.success('手机号已绑定')
 }
 
 const deactivate = async () => {

@@ -32,6 +32,7 @@ public class ArticleService {
     private final CommentLikeMapper commentLikeMapper;
     private final NotificationMapper notificationMapper;
     private final UserMapper userMapper;
+    private final FollowMapper followMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -45,6 +46,7 @@ public class ArticleService {
                           CommentLikeMapper commentLikeMapper,
                           NotificationMapper notificationMapper,
                           UserMapper userMapper,
+                          FollowMapper followMapper,
                           StringRedisTemplate redisTemplate) {
         this.articleMapper = articleMapper;
         this.commentMapper = commentMapper;
@@ -53,6 +55,7 @@ public class ArticleService {
         this.commentLikeMapper = commentLikeMapper;
         this.notificationMapper = notificationMapper;
         this.userMapper = userMapper;
+        this.followMapper = followMapper;
         this.redisTemplate = redisTemplate;
     }
 
@@ -209,12 +212,35 @@ public class ArticleService {
         return p;
     }
 
-    public Page<Article> hot(int page, int size) {
+    public Page<Article> hot(int page, int size, String category) {
         LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
         LIST_SELECT.accept(wrapper);
         wrapper.eq(Article::getStatus, 1);
-        wrapper.orderByDesc(Article::getLikeCount);
+        if (category != null && !category.isEmpty()) {
+            wrapper.eq(Article::getCategory, category);
+        }
+        // 热度 = 浏览*1 + 点赞*3，按时间衰减（每过12小时热度减半）
+        wrapper.last("ORDER BY (view_count + like_count * 3) / POW(2, TIMESTAMPDIFF(HOUR, create_time, NOW()) / 12) DESC");
         Page<Article> p = articleMapper.selectPage(new Page<>(page, size), wrapper);
+        fillNicknames(p.getRecords());
+        return p;
+    }
+
+    public Page<Article> followArticles(int page, int size, String category) {
+        Long userId = UserContext.getUserId();
+        Page<Article> p = new Page<>(page, size);
+        if (userId == null) return p;
+        List<Follow> follows = followMapper.selectList(
+                new LambdaQueryWrapper<Follow>().eq(Follow::getUserId, userId));
+        if (follows.isEmpty()) return p;
+        List<Long> followIds = follows.stream().map(Follow::getFollowId).collect(Collectors.toList());
+        LambdaQueryWrapper<Article> wrapper = new LambdaQueryWrapper<>();
+        LIST_SELECT.accept(wrapper);
+        wrapper.eq(Article::getStatus, 1);
+        wrapper.in(Article::getUserId, followIds);
+        if (category != null && !category.isEmpty()) wrapper.eq(Article::getCategory, category);
+        wrapper.orderByDesc(Article::getCreateTime);
+        p = articleMapper.selectPage(p, wrapper);
         fillNicknames(p.getRecords());
         return p;
     }
@@ -281,15 +307,23 @@ public class ArticleService {
         articleMapper.update(null, Wrappers.<Article>lambdaUpdate()
                 .eq(Article::getId, id).setSql("like_count = like_count + 1"));
         redisTemplate.delete(CACHE_PREFIX + id);
-        // 通知作者
+        // 通知作者（已通知过则跳过）
         if (!article.getUserId().equals(userId)) {
-            Notification n = new Notification();
-            n.setUserId(article.getUserId());
-            n.setFromUserId(userId);
-            n.setType("LIKE");
-            n.setArticleId(id);
-            n.setContent("赞了你的文章《" + article.getTitle() + "》");
-            notificationMapper.insert(n);
+            long notified = notificationMapper.selectCount(
+                    new LambdaQueryWrapper<Notification>()
+                            .eq(Notification::getUserId, article.getUserId())
+                            .eq(Notification::getFromUserId, userId)
+                            .eq(Notification::getType, "LIKE")
+                            .eq(Notification::getArticleId, id));
+            if (notified == 0) {
+                Notification n = new Notification();
+                n.setUserId(article.getUserId());
+                n.setFromUserId(userId);
+                n.setType("LIKE");
+                n.setArticleId(id);
+                n.setContent("赞了你的文章《" + article.getTitle() + "》");
+                notificationMapper.insert(n);
+            }
         }
         return "点赞成功";
     }
@@ -310,6 +344,25 @@ public class ArticleService {
         fav.setArticleId(id);
         fav.setUserId(userId);
         articleFavoriteMapper.insert(fav);
+        // 通知作者（已通知过则跳过）
+        Article article = articleMapper.selectById(id);
+        if (!article.getUserId().equals(userId)) {
+            long notified = notificationMapper.selectCount(
+                    new LambdaQueryWrapper<Notification>()
+                            .eq(Notification::getUserId, article.getUserId())
+                            .eq(Notification::getFromUserId, userId)
+                            .eq(Notification::getType, "FAVORITE")
+                            .eq(Notification::getArticleId, id));
+            if (notified == 0) {
+                Notification n = new Notification();
+                n.setUserId(article.getUserId());
+                n.setFromUserId(userId);
+                n.setType("FAVORITE");
+                n.setArticleId(id);
+                n.setContent("收藏了你的文章《" + article.getTitle() + "》");
+                notificationMapper.insert(n);
+            }
+        }
         return "收藏成功";
     }
 

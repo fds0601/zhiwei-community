@@ -4,25 +4,39 @@
     <div class="draft-tip" v-if="autoSaveTip">{{ autoSaveTip }}</div>
     <el-input v-model="form.title" placeholder="标题" style="margin-bottom:15px" />
     <el-select v-model="form.category" placeholder="选择分类" style="margin-bottom:15px;width:100%" allow-create filterable>
-      <el-option label="LLM" value="LLM" />
-      <el-option label="RAG" value="RAG" />
-      <el-option label="Agent" value="Agent" />
       <el-option label="后端开发" value="后端开发" />
       <el-option label="前端开发" value="前端开发" />
-      <el-option label="教程" value="教程" />
+      <el-option label="AI应用" value="AI应用" />
+      <el-option label="数据库" value="数据库" />
+      <el-option label="架构设计" value="架构设计" />
+      <el-option label="运维部署" value="运维部署" />
+      <el-option label="云原生" value="云原生" />
+      <el-option label="职业成长" value="职业成长" />
+      <el-option label="开源项目" value="开源项目" />
+      <el-option label="其他" value="其他" />
     </el-select>
     <el-select v-model="tagInput" placeholder="选择标签（可输入自定义）" style="margin-bottom:15px;width:100%"
       multiple filterable allow-create :reserve-keyword="false" @change="onTagsChange">
       <el-option v-for="t in hotTags" :key="t.tag" :label="t.tag" :value="t.tag" />
     </el-select>
     <el-input v-model="form.summary" placeholder="摘要" style="margin-bottom:15px" />
-    <el-input v-model="form.coverUrl" placeholder="封面图URL（可选，粘贴图片链接）" style="margin-bottom:15px" />
+    <div style="margin-bottom:15px">
+      <div style="font-size:13px;color:#666;margin-bottom:5px">封面图（可选）</div>
+      <img v-if="form.coverUrl" :src="form.coverUrl" style="max-width:200px;border-radius:6px;display:block;margin-bottom:8px" />
+      <el-button size="small" @click="$refs.coverInput.click()">上传封面</el-button>
+      <input ref="coverInput" type="file" accept="image/*" style="display:none" @change="uploadCover" />
+    </div>
+    <div style="margin-bottom:8px">
+      <el-button size="small" @click="$refs.imgInput.click()">上传图片</el-button>
+      <input ref="imgInput" type="file" accept="image/*" style="display:none" @change="uploadImage" />
+    </div>
     <el-input v-model="form.content" type="textarea" :rows="15" placeholder="正文，支持Markdown" />
     <div style="margin-top:15px;display:flex;gap:10px">
       <el-button type="primary" :loading="loading" @click="submit">
         {{ isEdit ? '保存修改' : '发布' }}
       </el-button>
       <el-button @click="saveDraft">保存草稿</el-button>
+      <el-button @click="cancel">取消</el-button>
     </div>
   </div>
 </template>
@@ -85,6 +99,30 @@ onUnmounted(() => { if (autoTimer) clearInterval(autoTimer) })
 const saveDraft = async () => {
   await api.post('/draft', form)
   ElMessage.success('草稿已保存')
+}
+
+const cancel = () => {
+  router.back()
+}
+
+const uploadCover = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await api.post('/upload', fd)
+  form.coverUrl = res.data.url
+}
+
+const uploadImage = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  const fd = new FormData()
+  fd.append('file', file)
+  const res = await api.post('/upload', fd)
+  form.content += '\n![图片](' + res.data.url + ')\n'
+  ElMessage.success('图片已插入')
+  e.target.value = ''
 }
 
 const submit = async () => {

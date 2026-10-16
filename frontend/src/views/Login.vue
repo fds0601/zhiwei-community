@@ -4,6 +4,8 @@
     <el-input v-model="form.username" placeholder="用户名" style="margin-bottom:15px" />
     <el-input v-model="form.password" type="password" placeholder="密码" style="margin-bottom:15px" />
     <el-input v-if="!isLogin" v-model="form.nickname" placeholder="昵称" style="margin-bottom:15px" />
+    <el-input v-if="!isLogin" v-model="form.email" placeholder="邮箱" style="margin-bottom:15px" />
+    <el-input v-if="!isLogin" v-model="form.phone" placeholder="手机号" style="margin-bottom:15px" />
     <el-button type="primary" @click="submit" style="width:100%">{{ isLogin ? '登录' : '注册' }}</el-button>
     <p style="text-align:center;margin-top:15px">
       <el-link @click="isLogin = !isLogin">{{ isLogin ? '没有账号？去注册' : '已有账号？去登录' }}</el-link>
@@ -19,7 +21,7 @@ import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const isLogin = ref(true)
-const form = reactive({ username: '', password: '', nickname: '' })
+const form = reactive({ username: '', password: '', nickname: '', email: '', phone: '' })
 
 const submit = async () => {
   try {
@@ -33,10 +35,11 @@ const submit = async () => {
       ElMessage.success('登录成功')
       window.location.href = '/'
     } else {
+      if (!form.email || !/^[\w.-]+@[\w.-]+\.\w+$/.test(form.email)) return ElMessage.warning('请输入正确邮箱')
+      if (!form.phone || !/^1[3-9]\d{9}$/.test(form.phone)) return ElMessage.warning('请输入正确手机号')
       await api.post('/user/register', form)
       ElMessage.success('注册成功，请登录')
       isLogin.value = true
-      return
     }
   } catch (e) { ElMessage.error(e.response?.data?.message || '失败') }
 }

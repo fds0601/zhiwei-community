@@ -53,8 +53,16 @@ public class ArticleController {
 
     @GetMapping("/hot")
     public Result<Page<Article>> hot(@RequestParam(defaultValue = "1") int page,
-                                     @RequestParam(defaultValue = "10") int size) {
-        return Result.success(articleService.hot(page, size));
+                                     @RequestParam(defaultValue = "10") int size,
+                                     @RequestParam(required = false) String category) {
+        return Result.success(articleService.hot(page, size, category));
+    }
+
+    @GetMapping("/follow/list")
+    public Result<Page<Article>> follow(@RequestParam(defaultValue = "1") int page,
+                                        @RequestParam(defaultValue = "10") int size,
+                                        @RequestParam(required = false) String category) {
+        return Result.success(articleService.followArticles(page, size, category));
     }
 
     @GetMapping("/user/{userId}")

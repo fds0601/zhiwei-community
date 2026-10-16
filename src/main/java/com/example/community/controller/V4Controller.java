@@ -187,8 +187,39 @@ public class V4Controller {
 
     @PutMapping("/user/phone")
     public Result<Void> bindPhone(@RequestBody Map<String, String> body) {
+        String phone = body.get("phone");
+        if (phone != null && !phone.matches("^1[3-9]\\d{9}$"))
+            return Result.error(400, "手机号格式不正确");
         User u = userMapper.selectById(UserContext.getUserId());
-        u.setPhone(body.get("phone"));
+        u.setPhone(phone);
+        userMapper.updateById(u);
+        return Result.success(null);
+    }
+
+    @PutMapping("/user/email")
+    public Result<Void> bindEmail(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || !email.matches("^[\\w.-]+@[\\w.-]+\\.\\w+$"))
+            return Result.error(400, "邮箱格式不正确");
+        User exist = userMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+            .eq(User::getEmail, email).ne(User::getId, UserContext.getUserId()));
+        if (exist != null) return Result.error(400, "该邮箱已被使用");
+        User u = userMapper.selectById(UserContext.getUserId());
+        u.setEmail(email);
+        userMapper.updateById(u);
+        return Result.success(null);
+    }
+
+    @PutMapping("/user/username")
+    public Result<Void> changeUsername(@RequestBody Map<String, String> body) {
+        String username = body.get("username");
+        if (username == null || !username.matches("^[a-zA-Z0-9_]{3,20}$"))
+            return Result.error(400, "用户名需3-20位字母数字下划线");
+        User exist = userMapper.selectOne(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<User>()
+            .eq(User::getUsername, username));
+        if (exist != null) return Result.error(400, "用户名已被占用");
+        User u = userMapper.selectById(UserContext.getUserId());
+        u.setUsername(username);
         userMapper.updateById(u);
         return Result.success(null);
     }
@@ -267,25 +298,7 @@ public class V4Controller {
 
     @GetMapping("/search/hot")
     public Result<List<String>> hotSearch() {
-        // 从Redis取最近搜索词
-        Set<String> keys = redis.keys("search:hot:*");
-        List<String> result = new ArrayList<>();
-        if (keys != null) {
-            result = keys.stream()
-                    .sorted((a, b) -> {
-                        String ca = redis.opsForValue().get(a);
-                        String cb = redis.opsForValue().get(b);
-                        return Integer.compare(
-                                cb != null ? Integer.parseInt(cb) : 0,
-                                ca != null ? Integer.parseInt(ca) : 0);
-                    })
-                    .limit(10)
-                    .map(k -> k.replace("search:hot:", ""))
-                    .collect(Collectors.toList());
-        }
-        // 默认热词
-        if (result.isEmpty()) result = List.of("Java", "Spring Boot", "LLM", "RAG", "Agent");
-        return Result.success(result);
+        return Result.success(List.of("Java", "Spring Boot", "MySQL", "Redis", "LLM", "RAG", "Agent", "微服务"));
     }
 
     @GetMapping("/search/suggest")

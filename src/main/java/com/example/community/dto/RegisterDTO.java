@@ -11,7 +11,10 @@ public class RegisterDTO {
     @Size(min = 6, max = 20, message = "密码长度6-20位")
     private String password;
     private String nickname;
+    @NotBlank(message = "邮箱不能为空")
     private String email;
+    @NotBlank(message = "手机号不能为空")
+    private String phone;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -21,4 +24,6 @@ public class RegisterDTO {
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 }

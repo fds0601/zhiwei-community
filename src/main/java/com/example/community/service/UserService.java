@@ -36,6 +36,7 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setNickname(dto.getNickname() != null ? dto.getNickname() : dto.getUsername());
         user.setEmail(dto.getEmail());
+        user.setPhone(dto.getPhone());
         user.setRole("USER");
         user.setStatus(1);
         userMapper.insert(user);

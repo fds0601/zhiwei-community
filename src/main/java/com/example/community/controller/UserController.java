@@ -60,6 +60,8 @@ public class UserController {
         m.put("bio", u.getBio());
         m.put("avatar", u.getAvatar());
         m.put("banner", u.getBanner());
+        m.put("email", u.getEmail());
+        m.put("phone", u.getPhone());
         m.put("followerCount", followMapper.selectCount(
                 new LambdaQueryWrapper<Follow>().eq(Follow::getFollowId, userId)));
         m.put("followCount", followMapper.selectCount(
@@ -94,13 +96,20 @@ public class UserController {
         f.setUserId(me);
         f.setFollowId(userId);
         followMapper.insert(f);
-        // 通知被关注者
-        Notification n = new Notification();
-        n.setUserId(userId);
-        n.setFromUserId(me);
-        n.setType("FOLLOW");
-        n.setContent("关注了你");
-        notificationMapper.insert(n);
+        // 通知被关注者（已通知过则跳过）
+        long notified = notificationMapper.selectCount(
+                new LambdaQueryWrapper<Notification>()
+                        .eq(Notification::getUserId, userId)
+                        .eq(Notification::getFromUserId, me)
+                        .eq(Notification::getType, "FOLLOW"));
+        if (notified == 0) {
+            Notification n = new Notification();
+            n.setUserId(userId);
+            n.setFromUserId(me);
+            n.setType("FOLLOW");
+            n.setContent("关注了你");
+            notificationMapper.insert(n);
+        }
         return Result.success("关注成功");
     }
 

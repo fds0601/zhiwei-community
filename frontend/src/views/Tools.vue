@@ -7,11 +7,12 @@
     <div class="filter-bar">
       <el-radio-group v-model="category" @change="loadList">
         <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button label="LLM">LLM</el-radio-button>
-        <el-radio-button label="RAG">RAG</el-radio-button>
-        <el-radio-button label="Agent">Agent</el-radio-button>
-        <el-radio-button label="绘图">绘图</el-radio-button>
-        <el-radio-button label="办公">办公</el-radio-button>
+        <el-radio-button label="AI开发平台">AI开发平台</el-radio-button>
+        <el-radio-button label="开发框架">开发框架</el-radio-button>
+        <el-radio-button label="模型部署">模型部署</el-radio-button>
+        <el-radio-button label="AI客户端">AI客户端</el-radio-button>
+        <el-radio-button label="向量数据库">向量数据库</el-radio-button>
+        <el-radio-button label="API管理">API管理</el-radio-button>
       </el-radio-group>
     </div>
     <el-empty v-if="list.length === 0" description="暂无AI工具，快来提交第一个吧" />
@@ -20,14 +21,13 @@
         <h3>{{ t.name }}</h3>
         <p>{{ t.description }}</p>
         <el-tag size="small">{{ t.category }}</el-tag>
-        <span class="likes">赞 {{ t.likeCount }}</span>
       </div>
     </div>
 
     <el-dialog v-model="dialog" title="提交AI工具" width="500px">
       <el-input v-model="form.name" placeholder="工具名称" style="margin-bottom:10px" />
       <el-input v-model="form.url" placeholder="官网地址 https://..." style="margin-bottom:10px" />
-      <el-input v-model="form.category" placeholder="分类（LLM/RAG/Agent/绘图/办公）" style="margin-bottom:10px" />
+      <el-input v-model="form.category" placeholder="分类（AI开发平台/开发框架/模型部署/AI客户端/向量数据库/API管理）" style="margin-bottom:10px" />
       <el-input v-model="form.description" type="textarea" :rows="3" placeholder="工具简介" />
       <template #footer>
         <el-button @click="dialog = false">取消</el-button>

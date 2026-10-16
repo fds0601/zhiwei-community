@@ -39,7 +39,7 @@ const formatTime = (t) => {
 }
 .article-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
 .card-body { padding: 20px; flex: 1; }
-.cover { width: 120px; height: 100%; min-height: 80px; }
+.cover { width: 180px; height: 120px; flex-shrink: 0; }
 .title { margin: 0 0 8px; font-size: 18px; color: #222; }
 .summary { color: #666; font-size: 14px; margin: 0 0 12px; }
 .meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #999; flex-wrap: wrap; }

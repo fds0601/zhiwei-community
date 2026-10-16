@@ -34,12 +34,12 @@ const load = async () => {
 }
 const filtered = computed(() => {
   if (type.value === 'ALL') return list.value
-  if (type.value === 'LIKE') return list.value.filter(n => n.type === 'LIKE')
+  if (type.value === 'LIKE') return list.value.filter(n => n.type === 'LIKE' || n.type === 'FAVORITE')
   if (type.value === 'COMMENT') return list.value.filter(n => n.type === 'COMMENT')
   if (type.value === 'FOLLOW') return list.value.filter(n => n.type === 'FOLLOW')
   return list.value
 })
-const typeLabel = (t) => ({ LIKE: '赞', COMMENT: '评论', FOLLOW: '关注' }[t] || t)
+const typeLabel = (t) => ({ LIKE: '赞', FAVORITE: '收藏', COMMENT: '评论', FOLLOW: '关注' }[t] || t)
 const readAll = async () => {
   await api.post('/notification/read-all')
   load()

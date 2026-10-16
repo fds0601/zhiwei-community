@@ -13,7 +13,14 @@ api.interceptors.request.use(config => {
 })
 
 api.interceptors.response.use(
-  res => res.data,
+  res => {
+    const data = res.data
+    if (data.code && data.code !== 200) {
+      ElMessage.error(data.message || '操作失败')
+      return Promise.reject(new Error(data.message))
+    }
+    return data
+  },
   err => {
     const status = err.response?.status
     const msg = err.response?.data?.message || '请求失败'
