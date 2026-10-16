@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f6f7; }
+.navbar { background: #fff; border-bottom: 1px solid #e8e8e8; height: 56px; display: flex; align-items: center; padding: 0 40px; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: bold; color: #1e80ff; }
+.logo svg { width: 24px; height: 24px; }
+.nav-links { display: flex; gap: 20px; }
+.nav-links a { color: #555; text-decoration: none; font-size: 14px; }
+.nav-links a.active { color: #1e80ff; }
+.search-box { margin-left: auto; position: relative; }
+.search-box input { width: 240px; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 14px; }
+.container { max-width: 1000px; margin: 20px auto; display: flex; gap: 20px; }
+.sidebar { width: 200px; background: #fff; border-radius: 8px; padding: 16px; height: fit-content; }
+.sidebar-item { padding: 10px 12px; border-radius: 6px; font-size: 14px; color: #555; cursor: pointer; margin-bottom: 4px; }
+.sidebar-item.active { background: #e8f3ff; color: #1e80ff; }
+.main { flex: 1; }
+.tabs { display: flex; gap: 16px; margin-bottom: 16px; }
+.tab { font-size: 14px; color: #666; cursor: pointer; padding-bottom: 8px; }
+.tab.active { color: #1e80ff; border-bottom: 2px solid #1e80ff; }
+.article-card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.article-title { font-size: 18px; font-weight: 600; color: #222; margin-bottom: 8px; }
+.article-summary { font-size: 14px; color: #666; margin-bottom: 12px; line-height: 1.5; }
+.article-meta { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #999; }
+.article-meta .author { color: #1e80ff; }
+.tag { background: #e8f3ff; color: #1e80ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="navbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="#1e80ff" stroke-width="2"/>
+      <path d="M9 15L15 9L17 7L11 13L9 15Z" fill="#1e80ff"/>
+    </svg>
+    知微
+  </div>
+  <div class="nav-links">
+    <a class="active">首页</a>
+    <a>AI工具</a>
+  </div>
+  <div class="search-box">
+    <input placeholder="搜索文章/标签/用户">
+  </div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <div class="sidebar-item active">综合</div>
+    <div class="sidebar-item">后端开发</div>
+    <div class="sidebar-item">前端开发</div>
+    <div class="sidebar-item">AI应用</div>
+    <div class="sidebar-item">数据库</div>
+    <div class="sidebar-item">架构设计</div>
+    <div class="sidebar-item">运维部署</div>
+  </div>
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active">推荐</div>
+      <div class="tab">最新</div>
+    </div>
+    <div class="article-card">
+      <div class="article-title">转行做程序员，我踩过的那些坑</div>
+      <div class="article-summary">从会计转Java开发，两年经历分享：学习路线、面试准备、心态调整</div>
+      <div class="article-meta">
+        <span class="author">李四</span>
+        <span class="tag">其他</span>
+        <span class="tag">#转行</span>
+        <span>👁 3</span>
+        <span>👍 4</span>
+        <span>2026-10-16</span>
+      </div>
+    </div>
+    <div class="article-card">
+      <div class="article-title">为什么我推荐Dify——让非程序员也能搭AI应用的开源利器</div>
+      <div class="article-summary">Dify是开源LLM应用开发平台，可视化拖拽编排AI工作流，支持RAG知识库、Agent、Prompt编排</div>
+      <div class="article-meta">
+        <span class="author">钱七</span>
+        <span class="tag">开源项目</span>
+        <span>👁 0</span>
+        <span>👍 0</span>
+        <span>2026-10-16</span>
+      </div>
+    </div>
+    <div class="article-card">
+      <div class="article-title">Java后端面试常见问题汇总（2026最新）</div>
+      <div class="article-summary">集合、JVM、并发、Spring高频面试题</div>
+      <div class="article-meta">
+        <span class="author">李四</span>
+        <span class="tag">职业成长</span>
+        <span>👁 0</span>
+        <span>👍 2</span>
+        <span>2026-10-16</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
