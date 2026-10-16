@@ -12,10 +12,10 @@
     </parent>
 
     <groupId>com.example</groupId>
-    <artifactId>content-community</artifactId>
+    <artifactId>zhiwei-community</artifactId>
     <version>1.0.0</version>
-    <name>content-community</name>
-    <description>轻量级内容社区系统 - Spring Boot 3 后端</description>
+    <name>zhiwei-community</name>
+    <description>知微 - AI开发者全栈社区系统</description>
 
     <properties>
         <java.version>21</java.version>
